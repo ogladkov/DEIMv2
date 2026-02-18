@@ -140,20 +140,16 @@ class DetSolver(BaseSolver):
             )
 
             for k in test_stats:
+                names = COCO_BBOX_METRIC_NAMES if k == 'coco_eval_bbox' else None
                 if self.writer and dist_utils.is_main_process():
                     for i, v in enumerate(test_stats[k]):
-                        self.writer.add_scalar(f'Test/{k}_{i}'.format(k), v, epoch)
+                        metric_name = names[i] if names and i < len(names) else f'{k}_{i}'
+                        self.writer.add_scalar(f'Test/{metric_name}', v, epoch)
 
                 if self.clearml_logger and dist_utils.is_main_process():
-                    names = COCO_BBOX_METRIC_NAMES if k == 'coco_eval_bbox' else None
                     for i, v in enumerate(test_stats[k]):
                         metric_name = names[i] if names and i < len(names) else f'{k}_{i}'
                         self.clearml_logger.log_scalar(f'Test/{metric_name}', v, epoch)
-
-                    # #region agent log (verification)
-                    import json as _j, time as _t; _db = '/home/mani2/Projects/experiments/DEIMv2/.cursor/debug.log'
-                    open(_db, 'a').write(_j.dumps({"id": f"log_{int(_t.time()*1000)}_VER", "timestamp": int(_t.time()*1000), "location": "det_solver.py:clearml-named-log", "message": "named metrics sent", "data": {"epoch": epoch, "k": k, "names_used": [names[i] if names and i < len(names) else f'{k}_{i}' for i in range(len(test_stats[k]))], "values": [float(v) for v in test_stats[k]]}, "runId": "run5", "hypothesisId": "VER"}) + "\n")
-                    # #endregion
 
                 if k in best_stat:
                     best_stat['epoch'] = epoch if test_stats[k][0] > best_stat[k] else best_stat['epoch']
