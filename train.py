@@ -41,6 +41,13 @@ def main(args, ) -> None:
     update_dict.update({k: v for k, v in args.__dict__.items() \
         if k not in ['update', ] and v is not None})
 
+    # #region agent log
+    import json as _json, time as _time, os as _os
+    _dblog = '/home/mani2/Projects/experiments/DEIMv2/.cursor/debug.log'
+    _os.makedirs(_os.path.dirname(_dblog), exist_ok=True)
+    open(_dblog, 'a').write(_json.dumps({"id": f"log_{int(_time.time()*1000)}_A1", "timestamp": int(_time.time()*1000), "location": "train.py:41", "message": "update_dict clearml keys", "data": {k: v for k, v in update_dict.items() if 'clearml' in k.lower()}, "runId": "run2", "hypothesisId": "A"}) + "\n")
+    # #endregion
+
     cfg = YAMLConfig(args.config, **update_dict)
 
     if args.resume or args.tuning:
@@ -73,6 +80,9 @@ if __name__ == '__main__':
     parser.add_argument('--output-dir', type=str, help='output directoy')
     parser.add_argument('--summary-dir', type=str, help='tensorboard summry')
     parser.add_argument('--test-only', action='store_true', default=False,)
+    parser.add_argument('--clearml', action='store_true', help='enable ClearML experiment tracking')
+    parser.add_argument('--clearml-project', type=str, default='DEIMv2', help='ClearML project name')
+    parser.add_argument('--clearml-experiment', type=str, default=None, help='ClearML experiment name')
 
     # priority 1
     parser.add_argument('-u', '--update', nargs='+', help='update yaml config')

@@ -83,18 +83,19 @@ class DetSolver(BaseSolver):
             train_stats = train_one_epoch(
                 self.self_lr_scheduler,
                 self.lr_scheduler,
-                self.model, 
-                self.criterion, 
-                self.train_dataloader, 
-                self.optimizer, 
-                self.device, 
-                epoch, 
-                max_norm=args.clip_max_norm, 
-                print_freq=args.print_freq, 
-                ema=self.ema, 
-                scaler=self.scaler, 
+                self.model,
+                self.criterion,
+                self.train_dataloader,
+                self.optimizer,
+                self.device,
+                epoch,
+                max_norm=args.clip_max_norm,
+                print_freq=args.print_freq,
+                ema=self.ema,
+                scaler=self.scaler,
                 lr_warmup_scheduler=self.lr_warmup_scheduler,
-                writer=self.writer
+                writer=self.writer,
+                clearml_logger=self.clearml_logger,
             )
 
             if not self.self_lr_scheduler:  # update by epoch 
@@ -125,6 +126,11 @@ class DetSolver(BaseSolver):
                 if self.writer and dist_utils.is_main_process():
                     for i, v in enumerate(test_stats[k]):
                         self.writer.add_scalar(f'Test/{k}_{i}'.format(k), v, epoch)
+
+            if self.clearml_logger and dist_utils.is_main_process():
+                for k, v_list in test_stats.items():
+                    for i, v in enumerate(v_list):
+                        self.clearml_logger.log_scalar(f'Test/{k}_{i}', v, epoch)
 
                 if k in best_stat:
                     best_stat['epoch'] = epoch if test_stats[k][0] > best_stat[k] else best_stat['epoch']
@@ -186,6 +192,9 @@ class DetSolver(BaseSolver):
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
         print('Training time {}'.format(total_time_str))
+
+        if self.clearml_logger:
+            self.clearml_logger.finish()
 
 
     def val(self, ):

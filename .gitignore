@@ -142,3 +142,10 @@ dmypy.json
 *.zip
 *.html
 .DS_Store
+
+# Custom
+output/
+docs/
+.cursor/
+configs/dataset/coco_detection_test_clearml.yml
+configs/deimv2/deimv2_dinov3_s_coco_test_clearml.yml

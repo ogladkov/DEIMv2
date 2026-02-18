@@ -68,6 +68,30 @@ class BaseSolver(object):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.writer = cfg.writer
 
+        # #region agent log
+        import json as _json, time as _time
+        _dblog = '/home/mani2/Projects/experiments/DEIMv2/.cursor/debug.log'
+        _cfg_clearml = getattr(cfg, 'clearml', 'ATTR_MISSING')
+        _yaml_clearml = getattr(cfg, 'yaml_cfg', {}).get('clearml', 'NOT_IN_YAML')
+        _has_attr = hasattr(cfg, 'clearml')
+        _is_main = dist_utils.is_main_process()
+        open(_dblog, 'a').write(_json.dumps({"id": f"log_{int(_time.time()*1000)}_A2", "timestamp": int(_time.time()*1000), "location": "_solver.py:_setup", "message": "cfg.clearml attribute check", "data": {"cfg_clearml": str(_cfg_clearml), "yaml_clearml": str(_yaml_clearml), "hasattr_clearml": _has_attr, "is_main_process": _is_main}, "runId": "run2", "hypothesisId": "A"}) + "\n")
+        # #endregion
+
+        self.clearml_logger = None
+        _yaml_cfg = getattr(cfg, 'yaml_cfg', {})
+        if _yaml_cfg.get('clearml', False) and dist_utils.is_main_process():
+            from ..misc.clearml import ClearMLLogger
+            self.clearml_logger = ClearMLLogger(
+                project_name=_yaml_cfg.get('clearml_project', 'DEIMv2'),
+                experiment_name=_yaml_cfg.get('clearml_experiment', None),
+                config=_yaml_cfg,
+            )
+
+        # #region agent log
+        open(_dblog, 'a').write(_json.dumps({"id": f"log_{int(_time.time()*1000)}_A3", "timestamp": int(_time.time()*1000), "location": "_solver.py:_setup", "message": "clearml_logger init result", "data": {"clearml_logger": str(self.clearml_logger), "is_none": self.clearml_logger is None}, "runId": "run2", "hypothesisId": "A"}) + "\n")
+        # #endregion
+
         if self.writer:
             atexit.register(self.writer.close)
             if dist_utils.is_main_process():

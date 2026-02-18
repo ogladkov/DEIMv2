@@ -32,6 +32,7 @@ def train_one_epoch(self_lr_scheduler, lr_scheduler, model: torch.nn.Module, cri
 
     print_freq = kwargs.get('print_freq', 10)
     writer :SummaryWriter = kwargs.get('writer', None)
+    clearml_logger = kwargs.get('clearml_logger', None)
 
     ema :ModelEMA = kwargs.get('ema', None)
     scaler :GradScaler = kwargs.get('scaler', None)
@@ -109,12 +110,19 @@ def train_one_epoch(self_lr_scheduler, lr_scheduler, model: torch.nn.Module, cri
         metric_logger.update(loss=loss_value, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
 
-        if writer and dist_utils.is_main_process() and global_step % 10 == 0:
-            writer.add_scalar('Loss/total', loss_value.item(), global_step)
-            for j, pg in enumerate(optimizer.param_groups):
-                writer.add_scalar(f'Lr/pg_{j}', pg['lr'], global_step)
-            for k, v in loss_dict_reduced.items():
-                writer.add_scalar(f'Loss/{k}', v.item(), global_step)
+        if dist_utils.is_main_process() and global_step % 10 == 0:
+            if writer:
+                writer.add_scalar('Loss/total', loss_value.item(), global_step)
+                for j, pg in enumerate(optimizer.param_groups):
+                    writer.add_scalar(f'Lr/pg_{j}', pg['lr'], global_step)
+                for k, v in loss_dict_reduced.items():
+                    writer.add_scalar(f'Loss/{k}', v.item(), global_step)
+            if clearml_logger:
+                clearml_logger.log_scalar('Loss/total', loss_value.item(), global_step)
+                for j, pg in enumerate(optimizer.param_groups):
+                    clearml_logger.log_scalar(f'Lr/pg_{j}', pg['lr'], global_step)
+                for k, v in loss_dict_reduced.items():
+                    clearml_logger.log_scalar(f'Loss/{k}', v.item(), global_step)
 
     # gather the stats from all processes
     metric_logger.synchronize_between_processes()
