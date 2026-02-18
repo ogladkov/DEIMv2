@@ -18,6 +18,23 @@ from ._solver import BaseSolver
 from .det_engine import train_one_epoch, evaluate
 from ..optim.lr_scheduler import FlatCosineLRScheduler
 
+# Human-readable names for the 12 standard COCO bbox evaluation metrics
+# (matches the order returned by pycocotools COCOeval.stats)
+COCO_BBOX_METRIC_NAMES = [
+    'mAP',        # AP @ IoU=0.50:0.95 | area=all   | maxDets=100
+    'AP50',       # AP @ IoU=0.50      | area=all   | maxDets=100
+    'AP75',       # AP @ IoU=0.75      | area=all   | maxDets=100
+    'AP_small',   # AP @ IoU=0.50:0.95 | area=small | maxDets=100
+    'AP_medium',  # AP @ IoU=0.50:0.95 | area=med   | maxDets=100
+    'AP_large',   # AP @ IoU=0.50:0.95 | area=large | maxDets=100
+    'AR@1',       # AR @ IoU=0.50:0.95 | area=all   | maxDets=1
+    'AR@10',      # AR @ IoU=0.50:0.95 | area=all   | maxDets=10
+    'AR@100',     # AR @ IoU=0.50:0.95 | area=all   | maxDets=100
+    'AR_small',   # AR @ IoU=0.50:0.95 | area=small | maxDets=100
+    'AR_medium',  # AR @ IoU=0.50:0.95 | area=med   | maxDets=100
+    'AR_large',   # AR @ IoU=0.50:0.95 | area=large | maxDets=100
+]
+
 
 class DetSolver(BaseSolver):
 
@@ -127,10 +144,16 @@ class DetSolver(BaseSolver):
                     for i, v in enumerate(test_stats[k]):
                         self.writer.add_scalar(f'Test/{k}_{i}'.format(k), v, epoch)
 
-            if self.clearml_logger and dist_utils.is_main_process():
-                for k, v_list in test_stats.items():
-                    for i, v in enumerate(v_list):
-                        self.clearml_logger.log_scalar(f'Test/{k}_{i}', v, epoch)
+                if self.clearml_logger and dist_utils.is_main_process():
+                    names = COCO_BBOX_METRIC_NAMES if k == 'coco_eval_bbox' else None
+                    for i, v in enumerate(test_stats[k]):
+                        metric_name = names[i] if names and i < len(names) else f'{k}_{i}'
+                        self.clearml_logger.log_scalar(f'Test/{metric_name}', v, epoch)
+
+                    # #region agent log (verification)
+                    import json as _j, time as _t; _db = '/home/mani2/Projects/experiments/DEIMv2/.cursor/debug.log'
+                    open(_db, 'a').write(_j.dumps({"id": f"log_{int(_t.time()*1000)}_VER", "timestamp": int(_t.time()*1000), "location": "det_solver.py:clearml-named-log", "message": "named metrics sent", "data": {"epoch": epoch, "k": k, "names_used": [names[i] if names and i < len(names) else f'{k}_{i}' for i in range(len(test_stats[k]))], "values": [float(v) for v in test_stats[k]]}, "runId": "run5", "hypothesisId": "VER"}) + "\n")
+                    # #endregion
 
                 if k in best_stat:
                     best_stat['epoch'] = epoch if test_stats[k][0] > best_stat[k] else best_stat['epoch']

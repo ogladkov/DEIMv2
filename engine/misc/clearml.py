@@ -52,12 +52,6 @@ class ClearMLLogger:
         if not self.enabled:
             return
 
-        # #region agent log
-        import time as _time
-        _dblog = '/home/mani2/Projects/experiments/DEIMv2/.cursor/debug.log'
-        open(_dblog, 'a').write(__import__('json').dumps({"id": f"log_{int(_time.time()*1000)}_C1", "timestamp": int(_time.time()*1000), "location": "clearml.py:__init__", "message": "ClearMLLogger.__init__ entered", "data": {"project_name": project_name, "experiment_name": experiment_name, "CLEARML_AVAILABLE": CLEARML_AVAILABLE}, "runId": "run2", "hypothesisId": "C"}) + "\n")
-        # #endregion
-
         try:
             api_key = os.environ.get('CLEARML_API_KEY')
             api_secret = os.environ.get('CLEARML_API_SECRET')
@@ -79,14 +73,7 @@ class ClearMLLogger:
 
             print(f'ClearML logging initialized. Task ID: {self.task.id}')
 
-            # #region agent log
-            open(_dblog, 'a').write(__import__('json').dumps({"id": f"log_{int(_time.time()*1000)}_C2", "timestamp": int(_time.time()*1000), "location": "clearml.py:__init__", "message": "Task.init succeeded", "data": {"task_id": self.task.id, "task_name": self.task.name}, "runId": "run2", "hypothesisId": "C"}) + "\n")
-            # #endregion
-
         except Exception as e:
-            # #region agent log
-            open(_dblog, 'a').write(__import__('json').dumps({"id": f"log_{int(_time.time()*1000)}_C3", "timestamp": int(_time.time()*1000), "location": "clearml.py:__init__", "message": "Task.init FAILED", "data": {"error": str(e)}, "runId": "run2", "hypothesisId": "C"}) + "\n")
-            # #endregion
             print(f'ClearML initialization failed: {e}')
             self.enabled = False
             self.task = None
