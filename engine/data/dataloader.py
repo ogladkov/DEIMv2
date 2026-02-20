@@ -21,9 +21,11 @@ from functools import partial
 from ..core import register
 torchvision.disable_beta_transforms_warning()
 from copy import deepcopy
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFile
 import os
 from collections import defaultdict, deque
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 __all__ = [

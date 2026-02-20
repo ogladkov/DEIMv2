@@ -54,6 +54,7 @@ def main(args, ):
             return outputs
 
     model = Model()
+    model.eval()
 
     img_size = cfg.yaml_cfg["eval_spatial_size"]
     data = torch.rand(32, 3, *img_size)
@@ -75,8 +76,9 @@ def main(args, ):
         output_names=['labels', 'boxes', 'scores'],
         dynamic_axes=dynamic_axes,
         opset_version=args.opset,
-        verbose=False,
+        verbose=True,
         do_constant_folding=True,
+        dynamo=False
     )
 
     if args.check:
